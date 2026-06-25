@@ -1,8 +1,44 @@
-# autoanki — Edge AI 词汇预热牌组 Pipeline
+# epub2anki — Edge AI 词汇预热牌组 Pipeline
 
-从英文原著提取 GRE/六级/考研难度词汇, 生成 Anki 牌组 (.apkg)。
+从英文 EPUB 提取 GRE/六级/考研难度词汇，生成 Anki 牌组 (.apkg)。
 
-本地推理, 无 API 费用。适配 llama.cpp server (RTX 3060)。
+本地推理，无 API 费用。适配 llama.cpp server (RTX 3060)。
+
+---
+
+## 快速开始
+
+```bash
+# 全量跑 (无 TTS)
+epub2anki run
+
+# 全量跑 (含 TTS 音频)
+epub2anki run --tts
+
+# 只看分片结果
+epub2anki run --dry-run
+
+# 只跑前 5 个 chunk
+epub2anki run --limit 5
+
+# 查看已提取词汇
+epub2anki inspect
+```
+
+**不传 `-o` 时输出文件名 = EPUB 文件名 + `.apkg`。**
+
+---
+
+## 架构：5 阶段闭环
+
+```
+Stage 1        Stage 2        Stage 3        Stage 4       Stage 5
+EPUB → MD   窗口流式分片    本地 LLM 推理   TTS 音频生成   结构化打包
+preprocess    chunk          infer           tts            package
+─────────────────────────────────────────────────────────────────────
+ass/*.epub   _run_state/    _run_state/     _audio/        *.apkg
+             chunks.json    results.jsonl   *.mp3
+```
 
 ---
 
@@ -20,124 +56,48 @@
 
 使用 `llama.cpp` 加载 GGUF 量化模型，提供兼容 OpenAI 的 API。
 
-**默认：`unsloth/gemma-4-E4B-it-qat-GGUF`** (Q4_K_XL)
-- 大小：~4.0 GB · VRAM：~5 GB
-- 6 GB 显存流畅运行，RTX 3060 实测可用
-
-
 ```bash
-
-
-# 2. 启动服务 (长期驻守)
 llama serve --no-mmproj \
-  -hf unsloth/gemma-4-E4B-it-qat-GGUF:UD-Q4_K_XL 
+  -hf unsloth/gemma-4-E4B-it-qat-GGUF:UD-Q4_K_XL
 
 # → 监听 127.0.0.1:8080
 # → -hf 首次自动下载 GGUF
 ```
+
 ### TTS 模型 (可选)
 
-使用 `KittenML/kitten-tts` 全家桶，`kitten-tts` 二进制预置在项目目录。
+使用 `KittenML/kitten-tts` 全家桶。模型由 HuggingFace Hub 自动缓存到 `~/.cache/huggingface/hub/`。
 
-| 模型 | 大小 | 说明 |
-|---|---|---|
-| `mini-0.8` | ~78 MB | **推荐**。音质好，稳定性高 |
-| `nano-0.8-int8` | ~27 MB | 极轻量，但单个单词 / 句尾末词易出错 |
-| `micro-0.8` | ~40 MB | |
-
-模型由 HuggingFace Hub 自动缓存到 `~/.cache/huggingface/hub/`
 ### 项目安装
 
 ```bash
-git clone <repo>
-cd anki
-uv add genanki httpx
+git clone https://github.com/nuzutetsu007/epub2anki
+cd epub2anki
+uv add genanki httpx typer
 ```
 
 ### 启动检查
 
 ```bash
-# 检查 TTS 依赖
-uv run autoanki tts-check
-
-# 健康检查 (LLM API + EPUB)
-uv run autoanki run --dry-run
+epub2anki tts-check          # 检查 TTS 依赖
+epub2anki run --dry-run      # 健康检查 (LLM API + EPUB)
 ```
 
 ---
-
-## 架构：5 阶段闭环
-
-```
-Stage 1        Stage 2        Stage 3        Stage 4       Stage 5
-EPUB → MD   窗口流式分片    本地 LLM 推理   TTS 音频生成   结构化打包
-preprocess    chunk          infer           tts            package
-─────────────────────────────────────────────────────────────────────
-ass/*.epub   _run/state     _run/state      _audio/        *.apkg
-             chunks.json    results.jsonl   *.mp3
-```
-
-## 快速开始
-
-```bash
-# 全量跑 (无 TTS)
-uv run autoanki run
-
-# 调试: 只看分片
-uv run autoanki run --dry-run
-
-# 调试: 只跑前 5 个 chunk
-uv run autoanki run --limit 5
-
-# 调试: 指定 chunk 范围
-uv run autoanki run --chunks 10-20
-
-# 跳过清洗 (用已有 cleaned.txt)
-uv run autoanki run --skip-preprocess
-
-# 全量跑 (含 TTS 音频)
-uv run autoanki run --tts
-```
-
-## TTS 音频
-
-### 一次性启用
-
-```bash
-uv run autoanki run --tts
-# → 全量 pipeline, 生成英文音频 + 打包
-```
-
-### 后补 TTS
-
-如果先跑 `autoanki run` 无 TTS, 之后想补音频:
-
-```bash
-uv run autoanki tts                       # 从 results.jsonl 生成音频到 _audio/
-uv run autoanki package                   # 重新打包 (自动加载 _audio/)
-# 或指定输出路径:
-uv run autoanki package -o wimpy_kid_with_audio.apkg
-```
-
-### 检查 TTS 依赖
-
-```bash
-uv run autoanki tts-check                 # 验证 kitten-tts 可用
-```
 
 ## CLI 命令
 
 | 命令 | 功能 |
 |---|---|
-| `uv run autoanki run` | 全量 pipeline, 自动断点续跑 |
-| `uv run autoanki chunk` | 只做 stage 1+2 (预处理 + 分片) |
-| `uv run autoanki infer` | 只做 stage 3 (LLM 推理) |
-| `uv run autoanki tts` | 只做 stage 4 (TTS 音频) |
-| `uv run autoanki package` | 只做 stage 5 (打包 .apkg) |
-| `uv run autoanki inspect` | 查看已提取词汇 |
-| `uv run autoanki inspect --status` | pipeline 状态概览 |
-| `uv run autoanki inspect --dupes` | 查看重复词汇 |
-| `uv run autoanki tts-check` | 检查 TTS 依赖是否就绪 |
+| `epub2anki run` | 全量 pipeline, 自动断点续跑 |
+| `epub2anki chunk` | 只做 stage 1+2 (预处理 + 分片) |
+| `epub2anki infer` | 只做 stage 3 (LLM 推理) |
+| `epub2anki tts` | 只做 stage 4 (TTS 音频) |
+| `epub2anki package` | 只做 stage 5 (打包 .apkg) |
+| `epub2anki inspect` | 查看已提取词汇 |
+| `epub2anki inspect --status` | pipeline 状态概览 |
+| `epub2anki inspect --dupes` | 查看重复词汇 |
+| `epub2anki tts-check` | 检查 TTS 依赖是否就绪 |
 
 ## 全部选项
 
@@ -155,7 +115,7 @@ uv run autoanki tts-check                 # 验证 kitten-tts 可用
 | `--ass-dir PATH` | `ass` | 素材目录 |
 | `--epub PATH` | — | 输入 epub 文件 |
 | `--md PATH` | — | 中间 markdown 文件 |
-| `--output / -o PATH` | `wimpy_kid_minicpm.apkg` | 输出 .apkg 路径 |
+| `--output / -o PATH` | EPUB文件名.apkg | 输出 .apkg 路径 |
 
 ### LLM 配置 (run / infer)
 
@@ -206,6 +166,33 @@ uv run autoanki tts-check                 # 验证 kitten-tts 可用
 | `--status` | 显示 pipeline 状态概览 |
 | `--dupes` | 只显示重复单词 |
 
+## TTS 音频
+
+### 一次性启用
+
+```bash
+epub2anki run --tts
+# → 全量 pipeline, 生成英文音频 + 打包
+```
+
+### 后补 TTS
+
+如果先跑 `epub2anki run` 无 TTS, 之后想补音频:
+
+```bash
+epub2anki tts                    # 从 results.jsonl 生成音频到 _audio/
+epub2anki package                # 重新打包 (自动加载 _audio/)
+# 或指定输出路径:
+epub2anki package -o my_vocab.apkg
+```
+
+### 检查 TTS 依赖
+
+```bash
+epub2anki tts-check
+# → 验证 kitten-tts 可用
+```
+
 ## 配置文件 autoanki.toml
 
 优先级: **CLI 参数 > 配置文件 > 默认值**
@@ -243,7 +230,7 @@ uv run autoanki tts-check                 # 验证 kitten-tts 可用
 Stage 3 每推理一个 chunk 自动记录进度。中断后重跑:
 
 ```bash
-uv run autoanki run
+epub2anki run
 # → 自动跳过已完成 chunk, 从断点继续
 ```
 
@@ -264,25 +251,23 @@ uv run autoanki run
 - LLM API 是否可达 (连接 localhost:8080)
 - TTS 依赖是否就绪 (kitten-tts 二进制 + 模型文件)
 
-任一检查失败直接退出, 不浪费算力。
+任一检查失败直接退出，不浪费算力。
 
 ## 文件结构
 
 ```
-anki/
+epub2anki/
 ├── autoanki/
 │   ├── cli.py              # typer CLI + 5 阶段实现
 │   └── tts.py              # TTS 音频生成模块
-├── ass/                    # 原始素材 (epub / ass / md)
+├── ass/                    # 原始素材 (epub / md)
 ├── _run_state/             # 断点状态 (自动创建)
 │   ├── chunks.json         # 分片缓存
 │   ├── progress.json       # 已完成 chunk ID
 │   ├── results.jsonl       # 提取结果 (逐行追加)
 │   └── failed_chunks.json  # 失败记录
 ├── _audio/                 # TTS 音频 (自动创建)
-├── kitten-tts-x86_64-linux/  # TTS 二进制
 ├── autoanki.toml.example   # 配置文件示例
-├── autoanki.toml           # 实际配置 (自建)
 ├── pyproject.toml
 └── README.md
 ```
@@ -299,7 +284,7 @@ anki/
 ## 安装
 
 ```bash
-uv add genanki httpx
+uv add genanki httpx typer
 ```
 
-项目使用 `uv` 管理依赖, 无需手动创建虚拟环境。
+项目使用 `uv` 管理依赖，无需手动创建虚拟环境。
