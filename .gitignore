@@ -1,0 +1,22 @@
+# runtime
+_run_state/
+_audio/
+_raw/
+*.apkg
+
+# env
+.venv/
+*.egg-info/
+__pycache__/
+*.pyc
+
+# TTS binary (download separately)
+kitten-tts-x86_64-linux/
+
+# IDE / editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

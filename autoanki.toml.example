@@ -1,0 +1,27 @@
+# autoanki 配置文件示例
+# 使用方式: cp autoanki.toml.example autoanki.toml
+# 优先级: CLI 参数 > 配置文件 > 默认值
+
+[autoanki]
+# 输入/输出
+# epub_file = "ass/my_book.epub"
+# md_file = "ass/my_book.md"
+# output_apkg = "output.apkg"
+
+# LLM 配置
+# api_url = "http://127.0.0.1:8080/v1/chat/completions"
+# model = "unsloth/gemma-4-E4B-it-qat-GGUF:UD-Q4_K_XL"
+# temperature = 0.3
+# max_tokens = 8064
+# llm_timeout = 300
+
+# 分片配置
+# chunk_size = 2000
+# chunk_overlap = 80
+
+# Anki 配置
+# anki_model_id = 16381234567
+# anki_deck_id = 20593847561
+
+# TTS 配置
+# tts_enabled = false
