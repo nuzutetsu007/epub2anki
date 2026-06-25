@@ -83,10 +83,11 @@ tar xzf kitten-tts-linux-x86_64.tar.gz
 用 `huggingface-cli` 手动下载模型：
 
 ```bash
-huggingface-cli download KittenML/kitten-tts --local-dir ~/.cache/huggingface/hub/ --include "models--KittenML--kitten-tts/snapshots/*/mini-0.8/*"
+huggingface-cli download KittenML/kitten-tts-mini-0.8
 ```
 
 支持模型: `mini-0.8` (推荐), `micro-0.8`, `nano-0.8-int8`。
+
 
 
 
