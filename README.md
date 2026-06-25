@@ -66,7 +66,22 @@ llama serve --no-mmproj \
 
 ### TTS 模型 (可选)
 
-使用 `KittenML/kitten-tts` 全家桶。模型由 HuggingFace Hub 自动缓存到 `~/.cache/huggingface/hub/`。
+**推荐 TTS 服务器：** [kitten_tts_rs](https://github.com/second-state/kitten_tts_rs)
+
+下载二进制并启动服务：
+
+```bash
+# 下载 linux-x86_64 二进制
+curl -LO https://github.com/second-state/kitten_tts_rs/releases/latest/download/kitten-tts-linux-x86_64.tar.gz
+tar xzf kitten-tts-linux-x86_64.tar.gz
+
+# 启动服务 (监听 127.0.0.1:8082)
+./kitten-tts serve --model mini-0.8
+```
+
+模型由 HuggingFace Hub 自动缓存到 `~/.cache/huggingface/hub/`。
+支持模型: `mini-0.8` (推荐), `micro-0.8`, `nano-0.8-int8`。
+
 
 ### 项目安装
 
