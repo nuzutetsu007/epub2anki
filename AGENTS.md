@@ -1,4 +1,4 @@
-# autoanki — Edge AI 词汇预热牌组 Pipeline
+# epub2anki — Edge AI 词汇预热牌组 Pipeline
 
 
 ## 架构总览：五阶段闭环状态机
@@ -19,23 +19,22 @@
   长期驻守, 监听 127.0.0.1:8080, RTX 3060 全天候推理
 
 终端 2:
-  cd /home/hashira/code/ankiword/autoanki
+  cd /home/hashira/code/ankiword/anki
 
   # 全量跑 (无 TTS):
-  uv run python pipeline.py   # preprocess → chunk → infer → package
-  # 产出: wimpy_kid_minicpm.apkg
+  uv run epub2anki run
 
   # 全量跑 (含 TTS):
-  uv run autoanki run --tts    # preprocess → chunk → infer → tts → package
+  uv run epub2anki run --tts
 
   # 分步跑 (适合断点续跑、分开调试):
-  uv run autoanki chunk        # preprocess + chunk
-  uv run autoanki infer        # 推理 (LLM 高算力)
-  uv run autoanki tts          # TTS 音频 (可选, 高算力, 可单独跑)
-  uv run autoanki package      # 打包 (无 TTS)
+  uv run epub2anki chunk        # preprocess + chunk
+  uv run epub2anki infer        # 推理 (LLM 高算力)
+  uv run epub2anki tts          # TTS 音频 (可选, 高算力, 可单独跑)
+  uv run epub2anki package      # 打包 (无 TTS)
 
 Anki:
-  双击导入 .apkg -> 同步手机 -> 20分钟刷完 Greq 黑话 -> 打开 epub 无痛阅读
+  双击导入 .apkg -> 同步手机 -> 20分钟刷完 GRE 黑话 -> 打开 epub 无痛阅读
 ```
 
 ---
@@ -43,11 +42,11 @@ Anki:
 ## 缺失依赖安装
 
 ```bash
-uv add genanki httpx
+uv add genanki httpx typer
 ```
 
 当前环境: Python 3.14, uv 已安装, 项目无 venv。`uv` 自动创建 venv + 安装依赖。
 
 # 调试代码:
 # rm -rf _run_state _audio _raw
-# uv run autoanki run --tts --chunk-size 1
+# uv run epub2anki run --tts --chunk-size 1
