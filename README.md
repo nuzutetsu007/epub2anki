@@ -79,8 +79,15 @@ tar xzf kitten-tts-linux-x86_64.tar.gz
 ./kitten-tts serve --model mini-0.8
 ```
 
-模型由 HuggingFace Hub 自动缓存到 `~/.cache/huggingface/hub/`。
+
+用 `huggingface-cli` 手动下载模型：
+
+```bash
+huggingface-cli download KittenML/kitten-tts --local-dir ~/.cache/huggingface/hub/ --include "models--KittenML--kitten-tts/snapshots/*/mini-0.8/*"
+```
+
 支持模型: `mini-0.8` (推荐), `micro-0.8`, `nano-0.8-int8`。
+
 
 
 ### 项目安装
